@@ -11,7 +11,7 @@ module.exports = {
         allowNull: false,
       },
 
-      username: {
+      email: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
@@ -21,6 +21,17 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      mustChangePassword:{
+        type:  Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
+      role: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        defaultValue: "user",
+      },
+
     });
   },
 
