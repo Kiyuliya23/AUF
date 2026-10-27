@@ -270,7 +270,7 @@ app.post("/delete-account", authenticateJWT, async (req, res) => {
   }
 });
 // Смена email пользователя
-app.post("/change-email", authenticateJWT, async (req, res) => {
+app.post("/update-email", authenticateJWT, async (req, res) => {
   try {
     // Получаем новый email и текущий пароль
     const { newEmail, currentPassword } = req.body;
@@ -325,6 +325,82 @@ app.post("/change-email", authenticateJWT, async (req, res) => {
 
   } catch (error) {
     console.error("Change email error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+});
+
+// Обновление роли пользователя — только для администратора
+app.put("/update-role", authenticateJWT, requireAdmin, async (req, res) => {
+  try {
+    const { userId, newRole } = req.body;
+
+    if (!userId || !newRole) {
+      return res.status(400).json({
+        message: "User ID and new role are required",
+      });
+    }
+
+    if (!["user", "admin"].includes(newRole)) {
+      return res.status(400).json({
+        message: "Invalid role",
+      });
+    }
+
+    const user = await User.findByPk(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    user.role = newRole;
+    user.tokenVersion += 1;
+    await user.save();
+
+    return res.status(200).json({
+      message: "User role updated successfully",
+      id: user.id,
+      role: user.role,
+    });
+  } catch (error) {
+    console.error("Update role error:", error);
+
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+});
+
+// Обновление JWT-токена
+app.post("/refresh-token", authenticateJWT, async (req, res) => {
+  try {
+    const user = await User.findByPk(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    const newToken = jwt.sign(
+      {
+        id: user.id,
+        tokenVersion: user.tokenVersion,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    return res.status(200).json({
+      message: "Token refreshed successfully",
+      token: newToken,
+    });
+  } catch (error) {
+    console.error("Refresh token error:", error);
 
     return res.status(500).json({
       message: "Server error",
